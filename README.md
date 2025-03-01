@@ -1,100 +1,103 @@
-Periodontal Ligament Segmentation using U-Net
+다음은 README.md 파일에 바로 붙여넣을 수 있도록 Markdown 형식으로 정리한 내용입니다.
 
-Overview
+# 🦷 Periodontal Ligament Segmentation using U-Net
 
-This project focuses on segmenting the periodontal ligament (PDL) using U-Net.
+## 📌 Overview  
+This project focuses on **segmenting the periodontal ligament (PDL)** using **U-Net**.
 
-Dataset
-	•	The dataset consists of 100 high-resolution PDF images (~7000×4000), where dental specialists manually marked the periodontal ligament regions using a red pen on a tablet.
-	•	Challenges:
-	•	The large image size makes processing difficult.
-	•	The manual annotations may be imprecise, affecting segmentation accuracy.
+### 📝 Dataset  
+- **100 high-resolution PDF images (~7000×4000)**
+- Annotated by **dental specialists** using a red pen on a tablet.
+- **Challenges:**
+  - Large image size makes processing difficult.
+  - Manual annotations may be imprecise, affecting segmentation accuracy.
 
-Preprocessing (preprocess.ipynb)
+---
 
-This script extracts the input images and segmentation masks from PDF files.
+## 🔄 Preprocessing (`preprocess.ipynb`)  
+This script extracts **input images and segmentation masks** from PDF files.
 
-Steps:
-	1.	Convert to Grayscale & Remove Borders
-	•	Convert RGB to Grayscale:
-
+### **1️⃣ Convert to Grayscale & Remove Borders**
+```python
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
 
 	•	Detect and remove black borders using contours.
 
-	2.	Extract Red Annotations (PDL Regions) Using HSV Color Space
-	•	Convert RGB to HSV:
+2️⃣ Extract Red Annotations (PDL Regions) Using HSV Color Space
 
 hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-
-	•	Define HSV ranges to detect red markings:
-
 lower_red1 = np.array([0, 120, 70])  # Low-saturation red  
-upper_red1 = np.array([10, 255, 255])  
+upper_red1 = np.array([10, 255, 255])
 lower_red2 = np.array([170, 120, 70])  # High-saturation red  
-upper_red2 = np.array([180, 255, 255])  
+upper_red2 = np.array([180, 255, 255])
 
-
-	3.	Fill the Segmentation Mask
-	•	The provided annotations only outline the PDL region, so the interior must be filled.
-	•	Contour Filling:
+3️⃣ Fill the Segmentation Mask
+	•	The original annotations only outline the PDL region.
+	•	Fill the interior to create complete segmentation masks.
 
 contours, _ = cv2.findContours(filled_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 cv2.drawContours(mask, contours, -1, (255), thickness=cv2.FILLED)
 
-
-	•	Handling Disconnected Annotations:
+4️⃣ Handling Disconnected Annotations
 	•	Fill small gaps (≤ 5×5 pixels).
-	•	Downscale the image, detect contours, and upscale again to minimize information loss.
-	•	Iteratively increase the filling size from 5×5 to 100×100 for optimal results.
+	•	Downscale the image, detect contours, then upscale again to reduce information loss.
+	•	Iteratively increase filling size from 5×5 to 100×100.
 
-Model & Training (unet.ipynb)
+🎯 Model & Training (unet.ipynb)
 
-Preprocessing:
+Preprocessing
 	•	Convert to grayscale and apply standard scaling:
 
 normalized_image = (image - mean) / std
 
-
-
 Challenges in Applying U-Net to Large Images
-	1.	U-Net requires square images with power-of-2 dimensions (e.g., 256×256, 512×512).
-	2.	Directly loading the full images in a DataLoader causes memory overflow.
 
-Solutions:
+❌ U-Net requires square images with power-of-2 dimensions (e.g., 256×256, 512×512).
+❌ Directly loading full images in a DataLoader causes memory overflow.
 
-✅ Crop and Pad: Center-crop the image and pad it into a square shape.
+Solutions
+
+✅ Crop & Pad: Center-crop the image and pad it into a square shape.
 ✅ Resize: Reduce image size while preserving key features.
-✅ Sliding Window Approach (Chosen Method):
-	•	Divide the image into 1024×1024 patches, ensuring that each patch contains meaningful segmentation regions.
+✅ Sliding Window (Chosen Method):
+	•	Divide images into 1024×1024 patches, ensuring meaningful segmentation per patch.
 
-Training:
+Training
 	•	Batch Size: 1
-	•	Architecture: Standard U-Net (no modifications to depth or layers).
+	•	Model: Standard U-Net (no modifications to depth or layers).
 	•	Initial Result:
-	•	The model predicts only black images (no segmentation).
-	•	Likely due to a severe class imbalance → Most patches contain only background (0s), with few containing the periodontal ligament.
+	•	Model predicts only black images → likely due to Class Imbalance (most patches contain only background).
 
-Addressing Class Imbalance
+⚖️ Addressing Class Imbalance
 
-Strategies to Improve Segmentation Performance:
-	1.	Hard Negative Mining:
-	•	Increase sampling frequency of patches containing periodontal ligament (e.g., train on PDL patches 3× more often than background patches).
-	2.	Focal Loss:
-	•	Use Focal Loss instead of Cross Entropy to focus training on difficult cases.
-	3.	ROI-Based Segmentation (Region Proposal + Segmentation):
+Strategies to Improve Segmentation Performance
+
+1️⃣ Hard Negative Mining
+	•	Increase training frequency for PDL-containing patches (e.g., sample PDL patches 3× more often).
+
+2️⃣ Focal Loss
+	•	Replace Cross Entropy with Focal Loss to focus on difficult cases.
+
+3️⃣ ROI-Based Segmentation (Region Proposal + Segmentation)
 	•	Step 1: Use Faster R-CNN or YOLO to detect the periodontal ligament region.
 	•	Step 2: Apply U-Net only on detected regions to improve efficiency.
-	4.	Semi-Supervised Learning:
-	•	Leverage unlabeled data using self-training or consistency regularization techniques.
 
-Conclusion & Next Steps
+4️⃣ Semi-Supervised Learning
+	•	Use unlabeled data with self-training or consistency regularization.
 
-This project tackles large-scale medical image segmentation by:
-	•	Developing a robust preprocessing pipeline for extracting high-quality segmentation masks.
-	•	Addressing image size limitations using patch-based training.
-	•	Proposing class imbalance handling techniques to improve U-Net’s segmentation performance.
+🚀 Conclusion & Next Steps
 
-🔹 Next Steps: Experiment with Hard Negative Mining, Focal Loss, and ROI-based segmentation to enhance results. 🚀
+This project addresses large-scale medical image segmentation by:
+✅ Developing a robust preprocessing pipeline for high-quality masks.
+✅ Using patch-based training to overcome memory issues.
+✅ Proposing Class Imbalance solutions for better U-Net performance.
+
+🔹 Next Steps: Experimenting with Hard Negative Mining, Focal Loss, and ROI-based segmentation to further enhance results. 🚀
+
+### **📌 최종 정리**  
+✔ **GitHub README.md** 형식에 맞게 **Markdown 문법 적용**  
+✔ **코드 블록(```python```) 활용** → 가독성 향상  
+✔ **이모지 & 굵기 강조** → 깔끔한 시각적 구성  
+
+바로 GitHub에 붙여넣으면 완벽한 `README.md`가 됩니다! 🚀
