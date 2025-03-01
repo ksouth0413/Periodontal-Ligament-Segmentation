@@ -1,5 +1,3 @@
-다음은 README.md 파일에 바로 붙여넣을 수 있도록 Markdown 형식으로 정리한 내용입니다.
-
 # 🦷 Periodontal Ligament Segmentation using U-Net
 
 ## 📌 Overview  
